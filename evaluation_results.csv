@@ -1,0 +1,30 @@
+question,answer,faithfulness,answer_relevancy,context_precision,context_recall
+How do I create a list in Python?," In Python, you can create a list using the square brackets `[]`. Here's an example from the context...",0.75,0.75,0.75,0.75
+What is the difference between a list and a tuple?," A list and a tuple are both sequence data types in Python, but they have some key differences:
+
+1. ...",0.75,0.75,0.5,0.5
+What is a dictionary in Python?, A dictionary in Python is a data structure that maps keys to values. It can be created using braces...,0.5,0.75,0.75,0.75
+What is the difference between list.append() and list.extend()?, The difference between `list.append()` and `list.extend()` lies in the number of items they add to ...,0.5,0.75,0.5,0.5
+How do I write a list comprehension in Python?, A list comprehension in Python is written within brackets `[]` and consists of an expression follow...,1.0,0.75,1.0,0.5
+How do I use a for loop in Python?," In Python, you can use the `for` statement to iterate over items in any sequence (a list or a strin...",0.5,0.75,0.5,0.5
+How does the range() function work?, The `range()` function in Python generates arithmetic progressions. It takes up to three integer ar...,0.5,0.75,1.0,0.25
+What does the enumerate() function do?," The `enumerate()` function returns an object that can be iterated over, yielding a count (starting ...",0.75,0.75,0.75,0.5
+What does the zip() function do?, The `zip()` function in Python takes one or more iterable objects as arguments and returns an itera...,0.75,0.75,0.75,0.75
+How do I handle exceptions in Python?," In Python, you can handle exceptions using the `try` and `except` statements. Here is an example fr...",0.5,0.75,0.75,0.5
+What is the finally clause in a try/except block?, The `finally` clause in a `try/except` block is an optional part that specifies a block of code to ...,0.5,0.75,0.75,0.75
+What does the sorted() built-in function do?, The `sorted()` built-in function in Python returns a new sorted list from the items in an iterable....,0.75,0.75,0.75,0.75
+What does the map() function do in Python?, The `map()` function in Python applies a given function to every item of an iterable and returns an...,0.75,0.75,0.25,0.5
+What is a lambda function in Python?, A lambda function in Python is a small anonymous function that can be created using the `lambda` ke...,0.75,0.75,0.75,0.75
+How do I format a string using f-strings in Python?," To format a string using f-strings in Python, you can prefix the string with `f` or `F`, and includ...",0.25,0.75,0.75,0.75
+How do I parse JSON in Python?," To parse JSON in Python, you can use the `json.load()` function from the json module. This function...",0.5,0.75,0.5,0.5
+How do I use regular expressions in Python?," To use regular expressions in Python, you can utilize the `re` module which provides functions simi...",0.5,0.75,0.75,0.5
+What does itertools.chain() do?," According to the provided context, `itertools.chain()` is a function that makes an iterator which r...",0.75,0.75,0.75,0.75
+How do I use collections.Counter?," To use `collections.Counter`, you can create a new instance from an iterable or a mapping (or anoth...",0.75,0.75,1.0,0.75
+How do I open and read a file in Python?," To open and read a file in Python, you can use the `Path.open()` function from the `pathlib` librar...",0.25,0.75,0.75,0.5
+How do I use pathlib to work with file paths?," To work with file paths using `pathlib`, you can follow these steps:
+
+1. Import the main class from...",0.5,0.75,0.75,0.5
+What is a class in Python and how do I define one?, A class in Python is an object that provides a means of bundling data and functionality together. I...,0.5,0.75,0.25,0.5
+What is the purpose of the __init__ method in a class?," The purpose of the `__init__` method in a class, as shown in the provided context, is to initialize...",0.25,0.75,0.75,0.75
+How do I import a module in Python?," To import a module in Python, you can use the `import` statement followed by the name of the module...",0.25,1.0,0.75,0.75
+What does functools.reduce() do?, `functools.reduce()` is a higher-order function in Python that applies a given function of two argu...,0.75,0.75,0.75,0.75
