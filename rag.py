@@ -1,63 +1,115 @@
 import os
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.retrievers import BM25Retriever
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain_classic.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
+from embeddings import NomicEmbeddings
 
 load_dotenv()
 
 CHROMA_PATH = "./chroma_python_docs"
 OLLAMA_MODEL = "mistral"
 
-def load_retriever():
-    embeddings = HuggingFaceEmbeddings(
-        model_name="BAAI/bge-base-en-v1.5"
-    )
-    vectorstore = Chroma(
-        persist_directory=CHROMA_PATH,
-        embedding_function=embeddings
-    )
+# Keywords that indicate a query belongs to an isolated embedding cluster.
+# For those queries we restrict retrieval to only that page's chunks so that
+# the re-ranker isn't distracted by semantically distant candidates.
+_DATETIME_KEYWORDS  = {"datetime", "timedelta", "strftime", "strptime", "timezone"}
+_ASYNCIO_KEYWORDS   = {"asyncio", "coroutine", "event loop", "async def", "await "}
+_THREADING_KEYWORDS = {"threading", "thread", "lock", "semaphore", "barrier"}
 
-    # Semantic retriever — higher k to give re-ranker a large candidate pool
+
+def _build_ensemble_reranker(vectorstore, all_docs, cross_encoder,
+                              chroma_filter=None, doc_filter_fn=None):
+    """
+    Build a hybrid (BM25 + semantic MMR) + cross-encoder retriever.
+
+    chroma_filter  — optional ChromaDB `where` dict applied to the semantic search.
+    doc_filter_fn  — optional predicate applied to all_docs before building BM25.
+    """
     semantic_retriever = vectorstore.as_retriever(
         search_type="mmr",
-        search_kwargs={"k": 8, "fetch_k": 20}
+        search_kwargs={
+            "k": 8, "fetch_k": 20,
+            **({"filter": chroma_filter} if chroma_filter else {}),
+        },
     )
 
-    # BM25 retriever — keyword-based, built from docs stored in Chroma
-    # Ensures exact function names like "zip" or "for" always get a match
+    bm25_docs = [d for d in all_docs if doc_filter_fn(d)] if doc_filter_fn else all_docs
+    bm25_retriever = BM25Retriever.from_documents(bm25_docs, k=8)
+
+    ensemble = EnsembleRetriever(
+        retrievers=[bm25_retriever, semantic_retriever],
+        weights=[0.2, 0.8],
+    )
+    reranker = CrossEncoderReranker(model=cross_encoder, top_n=6)
+    return ContextualCompressionRetriever(
+        base_compressor=reranker,
+        base_retriever=ensemble,
+    )
+
+
+def load_retriever():
+    embeddings = NomicEmbeddings()
+    vectorstore = Chroma(
+        persist_directory=CHROMA_PATH,
+        embedding_function=embeddings,
+    )
+
     raw = vectorstore.get()
     all_docs = [
         Document(page_content=pc, metadata=m)
         for pc, m in zip(raw["documents"], raw["metadatas"])
     ]
-    bm25_retriever = BM25Retriever.from_documents(all_docs, k=8)
 
-    # Hybrid ensemble: BM25 (keyword, 20%) + semantic (80%)
-    # Low BM25 weight avoids false positives on common keywords like
-    # "open", "import", "for" which appear in nearly every code chunk.
-    ensemble_retriever = EnsembleRetriever(
-        retrievers=[bm25_retriever, semantic_retriever],
-        weights=[0.2, 0.8]
+    # Cross-encoder shared by all retrievers (loaded once)
+    cross_encoder = HuggingFaceCrossEncoder(
+        model_name="cross-encoder/ms-marco-MiniLM-L-6-v2"
     )
 
-    # Cross-encoder re-ranker: re-scores every candidate against the query
-    # and keeps the top 6 — much more accurate than embedding similarity alone
-    cross_encoder = HuggingFaceCrossEncoder(model_name="cross-encoder/ms-marco-MiniLM-L-6-v2")
-    reranker = CrossEncoderReranker(model=cross_encoder, top_n=6)
+    # Full-corpus retriever — used for most queries
+    full_retriever = _build_ensemble_reranker(vectorstore, all_docs, cross_encoder)
 
-    return ContextualCompressionRetriever(
-        base_compressor=reranker,
-        base_retriever=ensemble_retriever
+    # Category-filtered retrievers for topics that live in isolated embedding
+    # clusters (datetime, threading, asyncio).  Restricting the candidate pool
+    # to the relevant page avoids distraction from semantically unrelated chunks.
+    def _page_filter(page_filename):
+        return lambda d: page_filename in d.metadata.get("source", "")
+
+    datetime_retriever  = _build_ensemble_reranker(
+        vectorstore, all_docs, cross_encoder,
+        chroma_filter={"source": {"$contains": "datetime.html"}},
+        doc_filter_fn=_page_filter("datetime.html"),
     )
+    threading_retriever = _build_ensemble_reranker(
+        vectorstore, all_docs, cross_encoder,
+        chroma_filter={"source": {"$contains": "threading.html"}},
+        doc_filter_fn=_page_filter("threading.html"),
+    )
+    asyncio_retriever   = _build_ensemble_reranker(
+        vectorstore, all_docs, cross_encoder,
+        chroma_filter={"source": {"$contains": "asyncio.html"}},
+        doc_filter_fn=_page_filter("asyncio.html"),
+    )
+
+    def smart_retrieve(query: str):
+        """Route the query to a filtered retriever when topic keywords match."""
+        q = query.lower()
+        if any(kw in q for kw in _DATETIME_KEYWORDS):
+            return datetime_retriever.invoke(query)
+        if any(kw in q for kw in _THREADING_KEYWORDS):
+            return threading_retriever.invoke(query)
+        if any(kw in q for kw in _ASYNCIO_KEYWORDS):
+            return asyncio_retriever.invoke(query)
+        return full_retriever.invoke(query)
+
+    return RunnableLambda(smart_retrieve)
 
 def build_qa_chain():
     retriever = load_retriever()

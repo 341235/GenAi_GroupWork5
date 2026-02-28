@@ -3,8 +3,8 @@ os.environ["USER_AGENT"] = "MyRAGApp/1.0"
 from dotenv import load_dotenv
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
+from embeddings import NomicEmbeddings
 
 load_dotenv()
 
@@ -48,6 +48,19 @@ def load_docs():
     print(f"{len(docs)} Sites loaded")
     return docs
 
+_BOILERPLATE_MARKERS = [
+    "© Copyright 2001 Python Software Foundation",
+    "Theme\n    \nAuto\nLight\nDark",
+    "Found a bug?\n",
+    "Created using Sphinx",
+    "Navigation\n\n\nindex\n\nmodules",
+]
+
+
+def _is_boilerplate(text: str) -> bool:
+    return any(marker in text for marker in _BOILERPLATE_MARKERS)
+
+
 def split_docs(docs):
     print("Creating Chunks...")
     # Tutorial pages are narrative prose — larger chunks preserve context
@@ -70,13 +83,18 @@ def split_docs(docs):
         else:
             chunks.extend(tutorial_splitter.split_documents([doc]))
     print(f"{len(chunks)} Chunks created")
+
+    # Remove HTML navigation/footer boilerplate that WebBaseLoader captures.
+    # These chunks (theme toggles, copyright notices, nav links) form a spurious
+    # outlier cluster in the embedding space and hurt retrieval precision.
+    before = len(chunks)
+    chunks = [c for c in chunks if not _is_boilerplate(c.page_content)]
+    print(f"Removed {before - len(chunks)} boilerplate chunks ({len(chunks)} remaining)")
     return chunks
 
 def build_vectorstore(chunks):
     print("Creating Embeddings & VektorDB (may take a few minutes)...")
-    embeddings = HuggingFaceEmbeddings(
-        model_name="BAAI/bge-base-en-v1.5"
-    )
+    embeddings = NomicEmbeddings()
     # Alte DB löschen und neu aufbauen
     import shutil
     if os.path.exists(CHROMA_PATH):

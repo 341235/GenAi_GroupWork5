@@ -1,4 +1,6 @@
 pandas
+plotly
+umap-learn
 rank-bm25
 langchain
 langchain-classic
@@ -16,3 +18,4 @@ ragas
 datasets
 python-dotenv
 tiktoken
+einops
