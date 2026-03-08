@@ -4,6 +4,7 @@ import json
 import pandas as pd
 from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
+from bert_score import score as bert_score_fn
 from rag import build_qa_chain
 
 load_dotenv()
@@ -154,6 +155,16 @@ Context: {context[:3000]}
 Reply with just a single number 1-5."""
     return score(prompt)
 
+def eval_bertscore(answer: str, ground_truth: str) -> float:
+    """Semantic similarity between answer and ground truth via BERTScore F1.
+    Downloads a BERT model on first run (~500 MB, cached afterwards)."""
+    try:
+        _, _, F1 = bert_score_fn([answer], [ground_truth], lang="en", verbose=False)
+        return F1[0].item()
+    except Exception as e:
+        print(f"    ⚠️  BERTScore error: {e}")
+        return None
+
 def eval_context_recall(ground_truth: str, context: str) -> float:
     prompt = f"""Rate from 1-5 how much of the information needed for the reference answer is present in the context (1=nothing useful, 5=everything needed is there).
 Reference Answer: {ground_truth}
@@ -163,7 +174,7 @@ Reply with just a single number 1-5."""
 
 def run_evaluation():
     print("🔧 Loading RAG chain...")
-    chain, _ = build_qa_chain()
+    chain = build_qa_chain()
 
     results = []
     print(f"📝 Running {len(TEST_CASES)} test questions...\n")
@@ -173,7 +184,7 @@ def run_evaluation():
         ground_truth = tc["ground_truth"]
         print(f"  [{i+1}/{len(TEST_CASES)}] {question}")
 
-        result = chain.invoke(question)
+        result = chain.invoke({"question": question, "chat_history": []})
         answer = result["answer"]
         docs = result["source_docs"]
         context = "\n\n".join(doc.page_content for doc in docs)
@@ -183,6 +194,7 @@ def run_evaluation():
         relev  = eval_answer_relevancy(question, answer)
         prec   = eval_context_precision(question, context)
         recall = eval_context_recall(ground_truth, context)
+        bert   = eval_bertscore(answer, ground_truth)
 
         results.append({
             "question": question,
@@ -191,15 +203,16 @@ def run_evaluation():
             "answer_relevancy": relev,
             "context_precision": prec,
             "context_recall": recall,
+            "bertscore_f1": bert,
         })
-        print(f"    ✅ faith={faith:.2f}  relevancy={relev:.2f}  precision={prec:.2f}  recall={recall:.2f}")
+        print(f"    ✅ faith={faith:.2f}  relevancy={relev:.2f}  precision={prec:.2f}  recall={recall:.2f}  bert={bert:.2f}")
 
     df = pd.DataFrame(results)
 
     print("\n" + "="*60)
     print("📈 EVALUATION RESULTS")
     print("="*60)
-    print(df[["question", "faithfulness", "answer_relevancy", "context_precision", "context_recall"]].to_string(index=False))
+    print(df[["question", "faithfulness", "answer_relevancy", "context_precision", "context_recall", "bertscore_f1"]].to_string(index=False))
 
     print("\n--- Averages ---")
     metrics = {
@@ -207,6 +220,7 @@ def run_evaluation():
         "answer_relevancy":  "Beantwortet es die Frage?    1.0 = perfekt",
         "context_precision": "Richtige Chunks gefunden?    1.0 = perfekt",
         "context_recall":    "Kein wichtiger Info fehlt?   1.0 = perfekt",
+        "bertscore_f1":      "Semantische Nähe zur Referenz 1.0 = perfekt",
     }
     for metric, desc in metrics.items():
         val = df[metric].mean()

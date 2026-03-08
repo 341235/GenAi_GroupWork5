@@ -42,6 +42,31 @@ def load_docs():
         "https://docs.python.org/3/library/threading.html",
         "https://docs.python.org/3/library/csv.html",
         "https://docs.python.org/3/library/io.html",
+        # NumPy
+        "https://numpy.org/doc/stable/user/quickstart.html",
+        "https://numpy.org/doc/stable/reference/arrays.html",
+        "https://numpy.org/doc/stable/reference/routines.math.html",
+        "https://numpy.org/doc/stable/reference/routines.linalg.html",
+        "https://numpy.org/doc/stable/reference/random/index.html",
+        # Pandas
+        "https://pandas.pydata.org/docs/user_guide/10min.html",
+        "https://pandas.pydata.org/docs/user_guide/indexing.html",
+        "https://pandas.pydata.org/docs/user_guide/groupby.html",
+        "https://pandas.pydata.org/docs/user_guide/merging.html",
+        "https://pandas.pydata.org/docs/user_guide/io.html",
+        # Matplotlib
+        "https://matplotlib.org/stable/tutorials/introductory/quick_start.html",
+        "https://matplotlib.org/stable/api/pyplot_summary.html",
+        # Scikit-learn
+        "https://scikit-learn.org/stable/getting_started.html",
+        "https://scikit-learn.org/stable/modules/linear_model.html",
+        "https://scikit-learn.org/stable/modules/tree.html",
+        "https://scikit-learn.org/stable/modules/clustering.html",
+        "https://scikit-learn.org/stable/modules/model_evaluation.html",
+        "https://scikit-learn.org/stable/modules/preprocessing.html",
+        # Requests
+        "https://requests.readthedocs.io/en/latest/user/quickstart.html",
+        "https://requests.readthedocs.io/en/latest/user/advanced.html",
     ]
     loader = WebBaseLoader(urls)
     docs = loader.load()
@@ -54,6 +79,16 @@ _BOILERPLATE_MARKERS = [
     "Found a bug?\n",
     "Created using Sphinx",
     "Navigation\n\n\nindex\n\nmodules",
+    # NumPy boilerplate
+    "© Copyright 2008-2024, NumPy Developers",
+    # Pandas boilerplate
+    "© Copyright 2008-2024, the pandas development team",
+    # Matplotlib boilerplate
+    "© Copyright 2002–2012 John Hunter, Darren Dale",
+    # Scikit-learn boilerplate
+    "© 2007 - 2024, scikit-learn developers",
+    # Requests boilerplate
+    "© Copyright 2019, Kenneth Reitz",
 ]
 
 
