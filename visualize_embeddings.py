@@ -69,6 +69,20 @@ CATEGORY_COLORS = {
     "Math":            "#8BC34A",
     "Types":           "#FF7043",
     "Concurrency":     "#26C6DA",
+    "NumPy":           "#013243",
+    "Pandas":          "#150458",
+    "Matplotlib":      "#11557C",
+    "scikit-learn":    "#F89939",
+    "Requests":        "#2B2D42",
+}
+
+
+_DOMAIN_CATEGORIES = {
+    "numpy.org":               "NumPy",
+    "pandas.pydata.org":       "Pandas",
+    "matplotlib.org":          "Matplotlib",
+    "scikit-learn.org":        "scikit-learn",
+    "requests.readthedocs.io": "Requests",
 }
 
 
@@ -77,6 +91,10 @@ def page_name(url: str) -> str:
 
 
 def category(url: str) -> str:
+    # Check third-party domains first to avoid clashes with stdlib page names
+    for domain, cat in _DOMAIN_CATEGORIES.items():
+        if domain in url:
+            return cat
     return CATEGORY_MAP.get(page_name(url), "Other")
 
 

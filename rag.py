@@ -247,6 +247,45 @@ def _is_on_topic(question: str, guard_llm) -> bool:
         return True  # fail open — better to answer than to block
 
 
+_RETRIEVAL_NEEDED_PROMPT = (
+    "You are a classifier. Answer only YES or NO.\n"
+    "Does answering this message require looking up Python documentation?\n"
+    "Answer NO only for purely conversational messages that need no Python knowledge "
+    "(e.g. 'thanks', 'ok', 'can you repeat that?', 'what did you just say?').\n"
+    "Message: {question}\n"
+    "Answer (YES or NO):"
+)
+
+_COMPRESS_PROMPT = (
+    "You are a documentation summarizer. From the following Python documentation excerpts, "
+    "extract and keep only the information directly relevant to answering this question: "
+    "\"{question}\"\n\n"
+    "Rules:\n"
+    "- Preserve all code examples exactly as written\n"
+    "- Remove repeated or off-topic content\n"
+    "- Be concise but complete\n\n"
+    "Documentation:\n{context}\n\nSummary:"
+)
+
+
+def _needs_retrieval(question: str, guard_llm) -> bool:
+    """Return False for purely conversational messages that need no doc lookup."""
+    try:
+        resp = guard_llm.invoke(_RETRIEVAL_NEEDED_PROMPT.format(question=question)).content.strip().upper()
+        return not resp.startswith("NO")
+    except Exception:
+        return True  # fail open
+
+
+def _compress_context(raw_context: str, question: str, summarizer_llm) -> str:
+    """Summarize retrieved chunks down to what is relevant for the question."""
+    prompt = _COMPRESS_PROMPT.format(question=question, context=raw_context[:5000])
+    try:
+        return summarizer_llm.invoke(prompt).content.strip()
+    except Exception:
+        return raw_context  # fall back to full context on error
+
+
 def build_qa_chain():
     llm = ChatOllama(
         model=OLLAMA_MODEL,
@@ -286,6 +325,12 @@ Question: {question}
 
 Answer:""")
 
+    direct_prompt = ChatPromptTemplate.from_template(
+        "{chat_history_text}You are a helpful Python assistant. "
+        "Answer the following conversational message briefly and naturally.\n\n"
+        "Message: {question}\n\nAnswer:"
+    )
+
     def format_docs(docs):
         return "\n\n".join(
             f"[Source: {doc.metadata.get('source', 'unknown')}]\n{doc.page_content}"
@@ -303,11 +348,24 @@ Answer:""")
 
     def _prepare(question: str, chat_history: list):
         """Retrieve docs and build the prompt value — shared by invoke and stream."""
+        history_text = format_history(chat_history)
+
+        # Adaptive retrieval: skip docs lookup for purely conversational messages
+        if not _needs_retrieval(question, guard_llm):
+            prompt_value = direct_prompt.invoke({
+                "question": question,
+                "chat_history_text": history_text,
+            })
+            return [], prompt_value
+
+        # Full RAG path: retrieve → compress → prompt
         docs = _multi_query_retrieve(question, smart_fn, llm)
+        raw_context = format_docs(docs)
+        compressed_context = _compress_context(raw_context, question, guard_llm)
         prompt_value = prompt.invoke({
-            "context": format_docs(docs),
+            "context": compressed_context,
             "question": question,
-            "chat_history_text": format_history(chat_history),
+            "chat_history_text": history_text,
         })
         return docs, prompt_value
 
