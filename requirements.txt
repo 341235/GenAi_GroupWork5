@@ -13,7 +13,8 @@ chromadb
 sentence-transformers
 beautifulsoup4
 requests
-streamlit
+streamlit>=1.35.0
+altair>=4,<5
 watchdog
 ragas
 datasets
