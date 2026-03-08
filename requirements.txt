@@ -5,7 +5,8 @@ rank-bm25
 langchain
 langchain-classic
 langchain-community
-langchain-ollama
+langchain-groq
+bert-score
 langchain-huggingface
 langchain-chroma
 chromadb

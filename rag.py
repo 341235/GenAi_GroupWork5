@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -15,7 +15,8 @@ from embeddings import NomicEmbeddings
 load_dotenv()
 
 CHROMA_PATH = "./chroma_python_docs"
-OLLAMA_MODEL = "llama3.1"
+GROQ_MODEL = "llama-3.1-8b-instant"
+GROQ_GUARD_MODEL = "llama-3.2-3b-preview"
 
 # --- Topic routing keyword sets ---
 _DATETIME_KEYWORDS   = {"datetime", "timedelta", "strftime", "strptime", "timezone"}
@@ -287,11 +288,8 @@ def _compress_context(raw_context: str, question: str, summarizer_llm) -> str:
 
 
 def build_qa_chain():
-    llm = ChatOllama(
-        model=OLLAMA_MODEL,
-        temperature=0,
-    )
-    guard_llm = ChatOllama(model="llama3.2", temperature=0)
+    llm = ChatGroq(model=GROQ_MODEL, temperature=0)
+    guard_llm = ChatGroq(model=GROQ_GUARD_MODEL, temperature=0)
 
     smart_fn = load_retriever()
 

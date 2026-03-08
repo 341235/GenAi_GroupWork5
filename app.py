@@ -1,5 +1,10 @@
+import os
 import streamlit as st
 from rag import build_qa_chain
+
+# Expose Groq API key to langchain_groq (reads from Streamlit secrets or .env)
+if "GROQ_API_KEY" in st.secrets:
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 
 st.set_page_config(
     page_title="Python Docs RAG",
