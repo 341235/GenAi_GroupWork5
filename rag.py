@@ -304,11 +304,14 @@ STRICT RULES:
 
 Before answering, verify: can I point to a specific part of the context for each claim I am about to make? If not, omit that claim.
 
+CONVERSATION RULES:
+- If there is a previous conversation, do NOT repeat information already stated. Only add NEW information that was not yet covered.
+- Build on what was already explained — assume the user remembers the previous answers.
+
 ADDITIONAL BEHAVIORS:
 - Rubberducking for Errors: If the user's question involves debugging or an error, do not just give the direct answer.
 Instead, use the context to ask 1-2 guiding questions that nudge the user to spot the mistake themselves.
-- Proactive Suggestions: At the end of your response, add a "See also:" section.
-Suggest 1-2 related functions or modules, but ONLY if they are mentioned in the provided context and are relevant to the user's intent.
+- Proactive Suggestions: At the end of your response, add a "See also:" section ONLY if you can suggest something directly relevant to THIS specific question (not just the general topic). Skip the section entirely if nothing fits precisely.
 
 FORMATTING & TONE:
 - Language: ALWAYS answer in the exact same language the user used for their question.
@@ -357,7 +360,14 @@ Answer:""")
             return [], prompt_value
 
         # Full RAG path: retrieve → compress → prompt
-        docs = _multi_query_retrieve(question, smart_fn, llm)
+        # Enrich the retrieval query with recent history so we find
+        # complementary chunks rather than the same ones again
+        if chat_history:
+            prev_topics = " | ".join(h[0] for h in chat_history[-2:])
+            retrieval_query = f"{question} (already covered: {prev_topics})"
+        else:
+            retrieval_query = question
+        docs = _multi_query_retrieve(retrieval_query, smart_fn, llm)
         raw_context = format_docs(docs)
         compressed_context = _compress_context(raw_context, question, guard_llm)
         prompt_value = prompt.invoke({
