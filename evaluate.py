@@ -1,11 +1,10 @@
 import os
 import re
-import json
+import sys
 import pandas as pd
 from dotenv import load_dotenv
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from bert_score import score as bert_score_fn
-from rag import build_qa_chain
 
 load_dotenv()
 
@@ -120,7 +119,8 @@ TEST_CASES = [
     },
 ]
 
-judge = ChatOllama(model="llama3.2", temperature=0, timeout=120)
+GROQ_GUARD_MODEL = "llama-3.2-3b-preview"
+judge = ChatGroq(model=GROQ_GUARD_MODEL, temperature=0)
 
 def score(prompt: str) -> float:
     """Ask the judge LLM to score something 1-5, return normalized 0-1."""
@@ -172,8 +172,18 @@ Context: {context[:3000]}
 Reply with just a single number 1-5."""
     return score(prompt)
 
-def run_evaluation():
-    print("🔧 Loading RAG chain...")
+def run_evaluation(pipeline_name: str = "advanced"):
+    """
+    pipeline_name: "advanced" → rag.py (full pipeline)
+                   "baseline"  → rag_baseline.py (page-level retriever)
+    """
+    if pipeline_name == "baseline":
+        from rag_baseline import build_qa_chain
+    else:
+        from rag import build_qa_chain
+        pipeline_name = "advanced"
+
+    print(f"🔧 Loading RAG chain ({pipeline_name})...")
     chain = build_qa_chain()
 
     results = []
@@ -210,7 +220,7 @@ def run_evaluation():
     df = pd.DataFrame(results)
 
     print("\n" + "="*60)
-    print("📈 EVALUATION RESULTS")
+    print(f"📈 EVALUATION RESULTS — pipeline: {pipeline_name.upper()}")
     print("="*60)
     print(df[["question", "faithfulness", "answer_relevancy", "context_precision", "context_recall", "bertscore_f1"]].to_string(index=False))
 
@@ -227,8 +237,10 @@ def run_evaluation():
         print(f"  {metric:<22} {val:.3f}  ({desc})")
     print("="*60)
 
-    df.to_csv("evaluation_results.csv", index=False)
-    print("\n💾 Results saved to evaluation_results.csv")
+    out_file = f"evaluation_results_{pipeline_name}.csv"
+    df.to_csv(out_file, index=False)
+    print(f"\n💾 Results saved to {out_file}")
 
 if __name__ == "__main__":
-    run_evaluation()
+    pipeline = "baseline" if "--baseline" in sys.argv else "advanced"
+    run_evaluation(pipeline)
