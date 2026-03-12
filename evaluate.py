@@ -4,6 +4,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from bert_score import score as bert_score_fn
+from rouge_score import rouge_scorer as rouge_scorer_lib
 
 load_dotenv()
 
@@ -120,8 +121,14 @@ TEST_CASES = [
 
 GROQ_JUDGE_MODEL = "llama-3.1-8b-instant"
 judge = ChatGroq(model=GROQ_JUDGE_MODEL, temperature=0)
+_rouge = rouge_scorer_lib.RougeScorer(["rougeL"], use_stemmer=True)
 
-def score(prompt: str) -> float:
+
+# ---------------------------------------------------------------------------
+# Scoring functions
+# ---------------------------------------------------------------------------
+
+def _llm_score(prompt: str) -> float:
     """Ask the judge LLM to score something 1-5, return normalized 0-1."""
     try:
         response = judge.invoke(prompt).content.strip()
@@ -133,30 +140,49 @@ def score(prompt: str) -> float:
         print(f"    ⚠️  Judge error: {e}")
         return None
 
+
 def eval_faithfulness(answer: str, context: str) -> float:
-    prompt = f"""Rate from 1-5 how faithful this answer is to the context (1=contradicts context, 5=fully supported by context).
-Context: {context[:3000]}
-Answer: {answer}
-Reply with just a single number 1-5."""
-    return score(prompt)
+    prompt = (
+        f"Rate from 1-5 how faithful this answer is to the context "
+        f"(1=contradicts context, 5=fully supported by context).\n"
+        f"Context: {context[:3000]}\nAnswer: {answer}\n"
+        f"Reply with just a single number 1-5."
+    )
+    return _llm_score(prompt)
+
 
 def eval_answer_relevancy(question: str, answer: str) -> float:
-    prompt = f"""Rate from 1-5 how well this answer addresses the question (1=completely irrelevant, 5=perfectly answers the question).
-Question: {question}
-Answer: {answer}
-Reply with just a single number 1-5."""
-    return score(prompt)
+    prompt = (
+        f"Rate from 1-5 how well this answer addresses the question "
+        f"(1=completely irrelevant, 5=perfectly answers the question).\n"
+        f"Question: {question}\nAnswer: {answer}\n"
+        f"Reply with just a single number 1-5."
+    )
+    return _llm_score(prompt)
+
 
 def eval_context_precision(question: str, context: str) -> float:
-    prompt = f"""Rate from 1-5 how relevant the retrieved context is for answering the question (1=completely irrelevant, 5=perfectly relevant).
-Question: {question}
-Context: {context[:3000]}
-Reply with just a single number 1-5."""
-    return score(prompt)
+    prompt = (
+        f"Rate from 1-5 how relevant the retrieved context is for answering the question "
+        f"(1=completely irrelevant, 5=perfectly relevant).\n"
+        f"Question: {question}\nContext: {context[:3000]}\n"
+        f"Reply with just a single number 1-5."
+    )
+    return _llm_score(prompt)
+
+
+def eval_context_recall(ground_truth: str, context: str) -> float:
+    prompt = (
+        f"Rate from 1-5 how much of the information needed for the reference answer "
+        f"is present in the context (1=nothing useful, 5=everything needed is there).\n"
+        f"Reference Answer: {ground_truth}\nContext: {context[:3000]}\n"
+        f"Reply with just a single number 1-5."
+    )
+    return _llm_score(prompt)
+
 
 def eval_bertscore(answer: str, ground_truth: str) -> float:
-    """Semantic similarity between answer and ground truth via BERTScore F1.
-    Downloads a BERT model on first run (~500 MB, cached afterwards)."""
+    """Semantic similarity between answer and ground truth via BERTScore F1."""
     try:
         _, _, F1 = bert_score_fn([answer], [ground_truth], lang="en", verbose=False)
         return F1[0].item()
@@ -164,38 +190,53 @@ def eval_bertscore(answer: str, ground_truth: str) -> float:
         print(f"    ⚠️  BERTScore error: {e}")
         return None
 
-def eval_context_recall(ground_truth: str, context: str) -> float:
-    prompt = f"""Rate from 1-5 how much of the information needed for the reference answer is present in the context (1=nothing useful, 5=everything needed is there).
-Reference Answer: {ground_truth}
-Context: {context[:3000]}
-Reply with just a single number 1-5."""
-    return score(prompt)
 
-def run_evaluation(pipeline_name: str = "advanced"):
+def eval_rouge_l(answer: str, ground_truth: str) -> float:
+    """ROUGE-L F1 between answer and ground truth (longest common subsequence)."""
+    try:
+        scores = _rouge.score(ground_truth, answer)
+        return scores["rougeL"].fmeasure
+    except Exception as e:
+        print(f"    ⚠️  ROUGE error: {e}")
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Evaluation runner
+# ---------------------------------------------------------------------------
+
+def run_evaluation(pipeline_name: str) -> pd.DataFrame:
     """
-    pipeline_name: "advanced" → rag.py (full pipeline)
-                   "baseline"  → rag_baseline.py (page-level retriever)
+    Run the full test suite against one pipeline.
+
+    pipeline_name: "baseline"   → rag_baseline.py  (parent-doc naive RAG)
+                   "advanced"   → rag.py            (hybrid + reranking + routing)
+                   "pageindex"  → rag_pageindex.py  (vectorless LLM tree navigation)
     """
     if pipeline_name == "baseline":
         from rag_baseline import build_qa_chain
+    elif pipeline_name == "pageindex":
+        from rag_pageindex import build_qa_chain
     else:
         from rag import build_qa_chain
         pipeline_name = "advanced"
 
-    print(f"🔧 Loading RAG chain ({pipeline_name})...")
+    print(f"\n{'='*60}")
+    print(f"🔧 Loading pipeline: {pipeline_name.upper()}")
+    print(f"{'='*60}")
     chain = build_qa_chain()
 
     results = []
     print(f"📝 Running {len(TEST_CASES)} test questions...\n")
 
     for i, tc in enumerate(TEST_CASES):
-        question = tc["question"]
+        question    = tc["question"]
         ground_truth = tc["ground_truth"]
         print(f"  [{i+1}/{len(TEST_CASES)}] {question}")
 
-        result = chain.invoke({"question": question, "chat_history": []})
-        answer = result["answer"]
-        docs = result["source_docs"]
+        result  = chain.invoke({"question": question, "chat_history": []})
+        answer  = result["answer"]
+        docs    = result["source_docs"]
         context = "\n\n".join(doc.page_content for doc in docs)
 
         print(f"    📊 Scoring...")
@@ -204,43 +245,102 @@ def run_evaluation(pipeline_name: str = "advanced"):
         prec   = eval_context_precision(question, context)
         recall = eval_context_recall(ground_truth, context)
         bert   = eval_bertscore(answer, ground_truth)
+        rouge  = eval_rouge_l(answer, ground_truth)
 
         results.append({
-            "question": question,
-            "answer": answer[:100] + "...",
-            "faithfulness": faith,
-            "answer_relevancy": relev,
+            "pipeline":          pipeline_name,
+            "question":          question,
+            "answer":            answer[:120] + "...",
+            "faithfulness":      faith,
+            "answer_relevancy":  relev,
             "context_precision": prec,
-            "context_recall": recall,
-            "bertscore_f1": bert,
+            "context_recall":    recall,
+            "bertscore_f1":      bert,
+            "rouge_l":           rouge,
         })
+
         def _fmt(v): return f"{v:.2f}" if v is not None else "N/A"
-        print(f"    ✅ faith={_fmt(faith)}  relevancy={_fmt(relev)}  precision={_fmt(prec)}  recall={_fmt(recall)}  bert={_fmt(bert)}")
+        print(
+            f"    ✅ faith={_fmt(faith)}  relevancy={_fmt(relev)}  "
+            f"prec={_fmt(prec)}  recall={_fmt(recall)}  "
+            f"bert={_fmt(bert)}  rouge={_fmt(rouge)}"
+        )
 
     df = pd.DataFrame(results)
 
-    print("\n" + "="*60)
-    print(f"📈 EVALUATION RESULTS — pipeline: {pipeline_name.upper()}")
-    print("="*60)
-    print(df[["question", "faithfulness", "answer_relevancy", "context_precision", "context_recall", "bertscore_f1"]].to_string(index=False))
-
-    print("\n--- Averages ---")
-    metrics = {
-        "faithfulness":      "Erfindet das Modell nichts?  1.0 = perfekt",
-        "answer_relevancy":  "Beantwortet es die Frage?    1.0 = perfekt",
-        "context_precision": "Richtige Chunks gefunden?    1.0 = perfekt",
-        "context_recall":    "Kein wichtiger Info fehlt?   1.0 = perfekt",
-        "bertscore_f1":      "Semantische Nähe zur Referenz 1.0 = perfekt",
+    # Per-pipeline summary
+    print(f"\n{'='*60}")
+    print(f"📈 RESULTS — {pipeline_name.upper()}")
+    print(f"{'='*60}")
+    metrics = ["faithfulness", "answer_relevancy", "context_precision",
+               "context_recall", "bertscore_f1", "rouge_l"]
+    descriptions = {
+        "faithfulness":      "No hallucination?          1.0 = perfect",
+        "answer_relevancy":  "Answers the question?      1.0 = perfect",
+        "context_precision": "Right chunks retrieved?    1.0 = perfect",
+        "context_recall":    "No key info missing?       1.0 = perfect",
+        "bertscore_f1":      "Semantic match to ref?     1.0 = perfect",
+        "rouge_l":           "Lexical overlap with ref?  1.0 = perfect",
     }
-    for metric, desc in metrics.items():
-        val = df[metric].mean()
-        print(f"  {metric:<22} {val:.3f}  ({desc})")
-    print("="*60)
+    for m in metrics:
+        val = df[m].mean()
+        print(f"  {m:<22} {val:.3f}  ({descriptions[m]})")
 
     out_file = f"evaluation_results_{pipeline_name}.csv"
     df.to_csv(out_file, index=False)
-    print(f"\n💾 Results saved to {out_file}")
+    print(f"\n💾 Saved → {out_file}")
+
+    return df
+
+
+def print_comparison(dfs: list[pd.DataFrame]) -> None:
+    """Print a side-by-side comparison table and save combined CSV."""
+    combined = pd.concat(dfs, ignore_index=True)
+    combined.to_csv("evaluation_results_comparison.csv", index=False)
+
+    metrics = ["faithfulness", "answer_relevancy", "context_precision",
+               "context_recall", "bertscore_f1", "rouge_l"]
+    pipelines = combined["pipeline"].unique()
+
+    print(f"\n{'='*70}")
+    print("📊 COMPARISON SUMMARY")
+    print(f"{'='*70}")
+    header = f"{'Metric':<22}" + "".join(f"  {p.upper():<12}" for p in pipelines)
+    print(header)
+    print("-" * len(header))
+
+    for m in metrics:
+        row = f"{m:<22}"
+        for p in pipelines:
+            val = combined[combined["pipeline"] == p][m].mean()
+            row += f"  {val:.3f}{'':9}"
+        print(row)
+
+    print(f"{'='*70}")
+    print("💾 Combined results saved → evaluation_results_comparison.csv")
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    pipeline = "baseline" if "--baseline" in sys.argv else "advanced"
-    run_evaluation(pipeline)
+    run_all      = "--all"       in sys.argv
+    run_baseline = "--baseline"  in sys.argv
+    run_advanced = "--advanced"  in sys.argv
+    run_pageindex = "--pageindex" in sys.argv
+
+    # Default to advanced if no flag given
+    if not any([run_all, run_baseline, run_advanced, run_pageindex]):
+        run_advanced = True
+
+    dfs = []
+    if run_all or run_baseline:
+        dfs.append(run_evaluation("baseline"))
+    if run_all or run_advanced:
+        dfs.append(run_evaluation("advanced"))
+    if run_all or run_pageindex:
+        dfs.append(run_evaluation("pageindex"))
+
+    if len(dfs) > 1:
+        print_comparison(dfs)

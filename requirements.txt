@@ -21,3 +21,5 @@ datasets
 python-dotenv
 tiktoken
 einops
+openai
+rouge-score
