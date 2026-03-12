@@ -89,13 +89,17 @@ _TOPIC_PHRASES = {
                        "handle api response status code"],
     "itertools":      ["chain multiple iterables", "generate combinations permutations",
                        "lazy iteration tools"],
-    "datastructures": ["append items to list", "access dict keys values",
-                       "set union intersection difference"],
-    "builtins":       ["use sorted with key function", "map filter over list",
-                       "enumerate zip builtin functions"],
+    # builtins and datastructures are semantically indistinguishable to the
+    # embedding model — merged into one topic to eliminate mis-routing
+    "python_basics":  ["append items to list", "access dict keys values",
+                       "set union intersection difference",
+                       "use sorted with key function", "map filter over list",
+                       "enumerate zip builtin functions",
+                       "remove duplicates from a list", "merge two dictionaries",
+                       "apply a function to every element"],
 }
 
-_ROUTING_THRESHOLD = 0.60  # minimum cosine similarity to use a topic retriever
+_ROUTING_THRESHOLD = 0.65  # calibrated from calibrate_routing.py output
 
 
 def _cosine_sim(a, b) -> float:
@@ -203,17 +207,15 @@ def load_retriever():
         doc_filter_fn=_domain_filter("requests.readthedocs.io"),
     )
 
-    # Stdlib builtin functions — functions.html
-    builtins_retriever = _build_ensemble_reranker(
+    # Merged: builtins (functions.html) + data structures (datastructures.html)
+    # These topics are semantically adjacent — one retriever covers both.
+    python_basics_retriever = _build_ensemble_reranker(
         vectorstore, all_docs, cross_encoder,
-        chroma_filter={"source": {"$contains": "functions.html"}},
-        doc_filter_fn=_page_filter("functions.html"),
-    )
-    # Data structures tutorial — datastructures.html
-    datastructures_retriever = _build_ensemble_reranker(
-        vectorstore, all_docs, cross_encoder,
-        chroma_filter={"source": {"$contains": "datastructures.html"}},
-        doc_filter_fn=_page_filter("datastructures.html"),
+        chroma_filter={"source": {"$in": ["functions.html", "datastructures.html"]}},
+        doc_filter_fn=lambda d: any(
+            f in d.metadata.get("source", "")
+            for f in ("functions.html", "datastructures.html")
+        ),
     )
     # itertools module — itertools.html
     itertools_retriever = _build_ensemble_reranker(
@@ -233,8 +235,7 @@ def load_retriever():
         "sklearn":        sklearn_retriever,
         "requests":       requests_retriever,
         "itertools":      itertools_retriever,
-        "datastructures": datastructures_retriever,
-        "builtins":       builtins_retriever,
+        "python_basics":  python_basics_retriever,
     }
 
     # Pre-compute per-topic centroids by averaging embeddings of representative phrases.
@@ -267,9 +268,9 @@ def load_retriever():
         if any(kw in q for kw in _ITERTOOLS_KEYWORDS):
             return itertools_retriever.invoke(query)
         if any(kw in q for kw in _DATASTRUCTURES_KEYWORDS):
-            return datastructures_retriever.invoke(query)
+            return python_basics_retriever.invoke(query)
         if any(kw in q for kw in _BUILTINS_KEYWORDS):
-            return builtins_retriever.invoke(query)
+            return python_basics_retriever.invoke(query)
         # Semantic routing fallback: embed the query and score against all topic centroids
         q_vec = embeddings.embed_query(query)
         scores = {t: _cosine_sim(q_vec, c) for t, c in _topic_centroids.items()}

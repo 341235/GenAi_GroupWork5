@@ -52,12 +52,11 @@ LABELED: list[tuple[str, str | None]] = [
     # itertools
     ("get all combinations of a list",              "itertools"),
     ("how do I chain two iterables together",       "itertools"),
-    # datastructures
-    ("remove duplicates from a list",               "datastructures"),
-    ("how do I merge two dictionaries",             "datastructures"),
-    # builtins
-    ("apply a function to every element",           "builtins"),
-    ("sort a list of tuples by the second value",   "builtins"),
+    # python_basics (merged: builtins + datastructures)
+    ("remove duplicates from a list",               "python_basics"),
+    ("how do I merge two dictionaries",             "python_basics"),
+    ("apply a function to every element",           "python_basics"),
+    ("sort a list of tuples by the second value",   "python_basics"),
     # cross-topic — should NOT be routed to any single topic
     ("convert a numpy array to a pandas DataFrame", None),
     ("plot a pandas DataFrame with matplotlib",     None),
