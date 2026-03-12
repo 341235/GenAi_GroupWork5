@@ -349,18 +349,6 @@ _RETRIEVAL_NEEDED_PROMPT = (
     "Answer (YES or NO):"
 )
 
-_COMPRESS_PROMPT = (
-    "You are a documentation summarizer. From the following Python documentation excerpts, "
-    "extract and keep only the information directly relevant to answering this question: "
-    "\"{question}\"\n\n"
-    "Rules:\n"
-    "- Preserve all code examples exactly as written\n"
-    "- Remove repeated or off-topic content\n"
-    "- Be concise but complete\n\n"
-    "Documentation:\n{context}\n\nSummary:"
-)
-
-
 def _needs_retrieval(question: str, guard_llm) -> bool:
     """Return False for purely conversational messages that need no doc lookup."""
     try:
@@ -390,14 +378,6 @@ def _rewrite_standalone(question: str, chat_history: list, llm) -> str:
         return question
 
 
-def _compress_context(raw_context: str, question: str, summarizer_llm) -> str:
-    """Summarize retrieved chunks down to what is relevant for the question."""
-    prompt = _COMPRESS_PROMPT.format(question=question, context=raw_context[:5000])
-    try:
-        return summarizer_llm.invoke(prompt).content.strip()
-    except Exception:
-        return raw_context  # fall back to full context on error
-
 
 def build_qa_chain():
     llm = ChatGroq(model=GROQ_MODEL, temperature=0)
@@ -413,8 +393,6 @@ STRICT RULES:
 - Do NOT add explanations, comparisons, or details that are not explicitly present in the context.
 - If the context does not contain enough information to answer, say exactly: "I couldn't find this in the Python docs."
 - Include code examples ONLY if they appear in the context.
-
-Internally verify each claim is supported by the context before writing it. Do NOT narrate this check — never output phrases like "I can point to...", "based on the context", or "the context states" in your answer.
 
 CONVERSATION RULES:
 - If there is a previous conversation, do NOT repeat information already stated. Only add NEW information that was not yet covered.
@@ -470,17 +448,13 @@ Answer:""")
             })
             return [], prompt_value
 
-        # Full RAG path: retrieve → compress → prompt
+        # Full RAG path: retrieve → prompt
         # Rewrite follow-up questions into standalone queries so the retriever
         # receives a coherent, self-contained question rather than a fragment.
         retrieval_query = _rewrite_standalone(question, chat_history, llm) if chat_history else question
         docs = _multi_query_retrieve(retrieval_query, smart_fn, llm)
-        raw_context = format_docs(docs)
-        # Use the main LLM (8B) for compression — the 3B guard model lacks
-        # the capacity to reliably summarize technical documentation.
-        compressed_context = _compress_context(raw_context, question, llm)
         prompt_value = prompt.invoke({
-            "context": compressed_context,
+            "context": format_docs(docs),
             "question": question,
             "chat_history_text": history_text,
         })
