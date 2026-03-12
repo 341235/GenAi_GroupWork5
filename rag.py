@@ -1,4 +1,6 @@
 import os
+import pickle
+import hashlib
 import numpy as np
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
@@ -16,8 +18,29 @@ from embeddings import NomicEmbeddings
 load_dotenv()
 
 CHROMA_PATH = "./chroma_python_docs"
+BM25_CACHE_DIR = ".bm25_cache"
 GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_GUARD_MODEL = "llama-3.2-3b-preview"
+
+
+def _load_or_build_bm25(docs: list, k: int) -> BM25Retriever:
+    """
+    Load a cached BM25Retriever from disk if the corpus hasn't changed,
+    otherwise build from scratch and cache for the next startup.
+    The cache key is an MD5 fingerprint of the document contents.
+    """
+    os.makedirs(BM25_CACHE_DIR, exist_ok=True)
+    fingerprint = hashlib.md5(
+        "".join(d.page_content[:120] for d in docs).encode()
+    ).hexdigest()
+    cache_path = os.path.join(BM25_CACHE_DIR, f"{fingerprint}_k{k}.pkl")
+    if os.path.exists(cache_path):
+        with open(cache_path, "rb") as f:
+            return pickle.load(f)
+    retriever = BM25Retriever.from_documents(docs, k=k)
+    with open(cache_path, "wb") as f:
+        pickle.dump(retriever, f)
+    return retriever
 
 # --- Topic routing keyword sets ---
 _DATETIME_KEYWORDS   = {"datetime", "timedelta", "strftime", "strptime", "timezone"}
@@ -97,7 +120,7 @@ def _build_ensemble_reranker(vectorstore, all_docs, cross_encoder,
     )
 
     bm25_docs = [d for d in all_docs if doc_filter_fn(d)] if doc_filter_fn else all_docs
-    bm25_retriever = BM25Retriever.from_documents(bm25_docs, k=6)
+    bm25_retriever = _load_or_build_bm25(bm25_docs, k=6)
 
     ensemble = EnsembleRetriever(
         retrievers=[bm25_retriever, semantic_retriever],
@@ -247,15 +270,15 @@ def load_retriever():
             return datastructures_retriever.invoke(query)
         if any(kw in q for kw in _BUILTINS_KEYWORDS):
             return builtins_retriever.invoke(query)
-        # Semantic routing fallback: embed the query and find the nearest topic centroid
+        # Semantic routing fallback: embed the query and score against all topic centroids
         q_vec = embeddings.embed_query(query)
-        best_topic, best_score = None, 0.0
-        for topic, centroid in _topic_centroids.items():
-            score = _cosine_sim(q_vec, centroid)
-            if score > best_score:
-                best_score, best_topic = score, topic
-        if best_score >= _ROUTING_THRESHOLD:
-            return _topic_retriever_map[best_topic].invoke(query)
+        scores = {t: _cosine_sim(q_vec, c) for t, c in _topic_centroids.items()}
+        above = [(t, s) for t, s in scores.items() if s >= _ROUTING_THRESHOLD]
+        # Single confident topic → use its filtered retriever
+        if len(above) == 1:
+            return _topic_retriever_map[above[0][0]].invoke(query)
+        # Multiple topics above threshold (e.g. "numpy array to pandas DataFrame")
+        # or no confident match → search full corpus to avoid missing any topic
         return full_retriever.invoke(query)
 
     return smart_retrieve
@@ -395,8 +418,7 @@ CONVERSATION RULES:
 - Build on what was already explained — assume the user remembers the previous answers.
 
 ADDITIONAL BEHAVIORS:
-- Rubberducking for Errors: If the user's question involves debugging or an error, do not just give the direct answer.
-Instead, use the context to ask 1-2 guiding questions that nudge the user to spot the mistake themselves.
+- Rubberducking: ONLY apply if the user explicitly shares an error message, a traceback, or says something is broken/not working. Do not apply for general how-to questions.
 - Proactive Suggestions: At the end of your response, add a "See also:" section ONLY if you can suggest something directly relevant to THIS specific question (not just the general topic). Skip the section entirely if nothing fits precisely. You MUST be able to explain in one sentence WHY it is relevant to the user's exact question — if you cannot, omit it.
 
 FORMATTING & TONE:
