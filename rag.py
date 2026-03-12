@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
@@ -44,6 +45,39 @@ _DATASTRUCTURES_KEYWORDS = {"list.append", "list.extend", "list.insert", "list.r
                              "dict.update", "dict.pop", "dict.setdefault",
                              "set.add", "set.remove", "set.union", "set.intersection",
                              "set.difference", "set.discard"}
+
+# --- Semantic routing: natural-language phrases per topic used to build centroids ---
+_TOPIC_PHRASES = {
+    "datetime":       ["parse a date string", "format datetime object",
+                       "convert timezone python", "calculate time difference"],
+    "asyncio":        ["write async await code", "run coroutines concurrently",
+                       "create event loop", "asyncio task gather"],
+    "threading":      ["run code in background thread", "synchronize threads with lock",
+                       "thread pool executor"],
+    "numpy":          ["create numpy array", "reshape array operations",
+                       "matrix multiplication broadcasting"],
+    "pandas":         ["read csv into dataframe", "filter rows in dataframe",
+                       "groupby aggregate pandas"],
+    "matplotlib":     ["plot a line chart", "create scatter plot",
+                       "customize figure axes matplotlib"],
+    "sklearn":        ["train a classifier", "split data train test",
+                       "evaluate model accuracy cross validation"],
+    "requests":       ["make http get request", "send post request with json",
+                       "handle api response status code"],
+    "itertools":      ["chain multiple iterables", "generate combinations permutations",
+                       "lazy iteration tools"],
+    "datastructures": ["append items to list", "access dict keys values",
+                       "set union intersection difference"],
+    "builtins":       ["use sorted with key function", "map filter over list",
+                       "enumerate zip builtin functions"],
+}
+
+_ROUTING_THRESHOLD = 0.60  # minimum cosine similarity to use a topic retriever
+
+
+def _cosine_sim(a, b) -> float:
+    a, b = np.array(a, dtype=float), np.array(b, dtype=float)
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-9))
 
 
 def _build_ensemble_reranker(vectorstore, all_docs, cross_encoder,
@@ -165,9 +199,32 @@ def load_retriever():
         doc_filter_fn=_page_filter("itertools.html"),
     )
 
+    # Map topic names to their retrievers (used by semantic routing below)
+    _topic_retriever_map = {
+        "datetime":       datetime_retriever,
+        "asyncio":        asyncio_retriever,
+        "threading":      threading_retriever,
+        "numpy":          numpy_retriever,
+        "pandas":         pandas_retriever,
+        "matplotlib":     matplotlib_retriever,
+        "sklearn":        sklearn_retriever,
+        "requests":       requests_retriever,
+        "itertools":      itertools_retriever,
+        "datastructures": datastructures_retriever,
+        "builtins":       builtins_retriever,
+    }
+
+    # Pre-compute per-topic centroids by averaging embeddings of representative phrases.
+    # Uses embed_query (search_query: prefix) because the phrases are query-like.
+    _topic_centroids = {
+        topic: np.mean([embeddings.embed_query(p) for p in phrases], axis=0)
+        for topic, phrases in _TOPIC_PHRASES.items()
+    }
+
     def smart_retrieve(query: str) -> list:
-        """Route the query to a filtered retriever when topic keywords match."""
+        """Route the query to a topic retriever via keyword match, then semantic fallback."""
         q = query.lower()
+        # Fast path: exact keyword match
         if any(kw in q for kw in _DATETIME_KEYWORDS):
             return datetime_retriever.invoke(query)
         if any(kw in q for kw in _THREADING_KEYWORDS):
@@ -190,6 +247,15 @@ def load_retriever():
             return datastructures_retriever.invoke(query)
         if any(kw in q for kw in _BUILTINS_KEYWORDS):
             return builtins_retriever.invoke(query)
+        # Semantic routing fallback: embed the query and find the nearest topic centroid
+        q_vec = embeddings.embed_query(query)
+        best_topic, best_score = None, 0.0
+        for topic, centroid in _topic_centroids.items():
+            score = _cosine_sim(q_vec, centroid)
+            if score > best_score:
+                best_score, best_topic = score, topic
+        if best_score >= _ROUTING_THRESHOLD:
+            return _topic_retriever_map[best_topic].invoke(query)
         return full_retriever.invoke(query)
 
     return smart_retrieve
@@ -216,11 +282,11 @@ def _multi_query_retrieve(query: str, smart_fn, llm) -> list:
     merged: list = []
     for q in [query] + variants:
         for doc in smart_fn(q):
-            key = doc.page_content[:150]
+            key = hash(doc.page_content)
             if key not in seen:
                 seen.add(key)
                 merged.append(doc)
-    return merged[:8]
+    return merged
 
 
 _OFF_TOPIC_REPLY = (
@@ -276,6 +342,26 @@ def _needs_retrieval(question: str, guard_llm) -> bool:
         return not resp.startswith("NO")
     except Exception:
         return True  # fail open
+
+
+_REWRITE_PROMPT = (
+    "Rewrite the last question as a fully self-contained, standalone question "
+    "using context from the conversation. If it is already standalone, return it unchanged. "
+    "Return only the rewritten question, nothing else.\n\n"
+    "Conversation:\n{history}\n\n"
+    "Last question: {question}\n\n"
+    "Standalone question:"
+)
+
+
+def _rewrite_standalone(question: str, chat_history: list, llm) -> str:
+    """Resolve pronouns / references using recent history so the retrieval query is self-contained."""
+    history_text = "\n".join(f"Human: {h}\nAssistant: {a}" for h, a in chat_history[-3:])
+    prompt = _REWRITE_PROMPT.format(history=history_text, question=question)
+    try:
+        return llm.invoke(prompt).content.strip()
+    except Exception:
+        return question
 
 
 def _compress_context(raw_context: str, question: str, summarizer_llm) -> str:
@@ -360,16 +446,14 @@ Answer:""")
             return [], prompt_value
 
         # Full RAG path: retrieve → compress → prompt
-        # Enrich the retrieval query with recent history so we find
-        # complementary chunks rather than the same ones again
-        if chat_history:
-            prev_topics = " | ".join(h[0] for h in chat_history[-2:])
-            retrieval_query = f"{question} (already covered: {prev_topics})"
-        else:
-            retrieval_query = question
+        # Rewrite follow-up questions into standalone queries so the retriever
+        # receives a coherent, self-contained question rather than a fragment.
+        retrieval_query = _rewrite_standalone(question, chat_history, llm) if chat_history else question
         docs = _multi_query_retrieve(retrieval_query, smart_fn, llm)
         raw_context = format_docs(docs)
-        compressed_context = _compress_context(raw_context, question, guard_llm)
+        # Use the main LLM (8B) for compression — the 3B guard model lacks
+        # the capacity to reliably summarize technical documentation.
+        compressed_context = _compress_context(raw_context, question, llm)
         prompt_value = prompt.invoke({
             "context": compressed_context,
             "question": question,
