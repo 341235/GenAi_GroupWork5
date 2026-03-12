@@ -1,4 +1,3 @@
-import os
 import re
 import sys
 import pandas as pd
@@ -119,8 +118,8 @@ TEST_CASES = [
     },
 ]
 
-GROQ_GUARD_MODEL = "llama-3.2-3b-preview"
-judge = ChatGroq(model=GROQ_GUARD_MODEL, temperature=0)
+GROQ_JUDGE_MODEL = "llama-3.1-8b-instant"
+judge = ChatGroq(model=GROQ_JUDGE_MODEL, temperature=0)
 
 def score(prompt: str) -> float:
     """Ask the judge LLM to score something 1-5, return normalized 0-1."""
@@ -215,7 +214,8 @@ def run_evaluation(pipeline_name: str = "advanced"):
             "context_recall": recall,
             "bertscore_f1": bert,
         })
-        print(f"    ✅ faith={faith:.2f}  relevancy={relev:.2f}  precision={prec:.2f}  recall={recall:.2f}  bert={bert:.2f}")
+        def _fmt(v): return f"{v:.2f}" if v is not None else "N/A"
+        print(f"    ✅ faith={_fmt(faith)}  relevancy={_fmt(relev)}  precision={_fmt(prec)}  recall={_fmt(recall)}  bert={_fmt(bert)}")
 
     df = pd.DataFrame(results)
 
