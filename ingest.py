@@ -54,9 +54,29 @@ def load_docs():
         "https://pandas.pydata.org/docs/user_guide/groupby.html",
         "https://pandas.pydata.org/docs/user_guide/merging.html",
         "https://pandas.pydata.org/docs/user_guide/io.html",
-        # Matplotlib
+        # Matplotlib — tutorials
         "https://matplotlib.org/stable/tutorials/introductory/quick_start.html",
+        "https://matplotlib.org/stable/tutorials/introductory/pyplot.html",
         "https://matplotlib.org/stable/api/pyplot_summary.html",
+        # Matplotlib — core plot types
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.scatter.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.bar.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.barh.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.boxplot.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.pie.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.imshow.html",
+        # Matplotlib — figure / axes management
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.figure.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.legend.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.xlabel.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.ylabel.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.title.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.xlim.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.ylim.html",
+        "https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html",
         # Scikit-learn
         "https://scikit-learn.org/stable/getting_started.html",
         "https://scikit-learn.org/stable/modules/linear_model.html",
