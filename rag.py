@@ -99,7 +99,9 @@ _TOPIC_PHRASES = {
                        "apply a function to every element"],
 }
 
-_ROUTING_THRESHOLD = 0.65  # calibrated from calibrate_routing.py output
+_ROUTING_THRESHOLD = 0.72  # calibrated from calibrate_routing.py — queries below this
+                           # fall back to full_retriever; multi-topic fallback handles
+                           # cross-topic queries where multiple topics score above this
 
 
 def _cosine_sim(a, b) -> float:
