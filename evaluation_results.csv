@@ -1,33 +1,36 @@
 question,answer,faithfulness,answer_relevancy,context_precision,context_recall,bertscore_f1
-How do I create a list in Python?,You can create a list in Python by enclosing a sequence of values in square brackets `[]`. For examp...,0.25,0.75,0.75,0.75,0.8624072670936584
-What is the difference between a list and a tuple?,"A great question about one of the fundamental data structures in Python!
+How do I create a list in Python?,You can create a list in Python by enclosing a sequence of values in square brackets `[]`. Here are ...,0.25,1.0,0.5,1.0,0.8543079495429993
+What is the difference between a list and a tuple?,"A list and a tuple are both sequence data types in Python, but they have some key differences:
 
-According to the context, ...",0.5,0.75,0.75,0.75,0.8143139481544495
-What is a dictionary in Python?,"A dictionary in Python is a data type that stores a collection of key-value pairs, where the keys ar...",0.5,0.75,0.5,0.75,0.8510209321975708
-What is the difference between list.append() and list.extend()?,The difference between `list.append()` and `list.extend()` is that `append()` adds a single item to ...,0.5,0.75,0.0,0.0,0.8577784895896912
-How do I write a list comprehension in Python?,"You can write a list comprehension in Python by using the following syntax:
-```python
-[expression fo...",0.25,0.75,1.0,1.0,0.8305563926696777
-How do I use a for loop in Python?,"You can use a for loop in Python to iterate over a sequence (such as a list, tuple, or string) or ot...",0.5,0.75,0.75,0.75,0.8273575305938721
-How does the range() function work?,"The range() function generates arithmetic progressions. It takes three arguments: start, stop, and s...",0.5,0.75,1.0,1.0,0.826388418674469
-What does the enumerate() function do?,The `enumerate()` function returns an enumerate object. It takes an iterable and an optional start i...,0.25,0.75,1.0,0.75,0.8353036642074585
-What does the zip() function do?,"The `zip()` function iterates over several iterables in parallel, producing tuples with an item from...",0.75,0.75,0.75,1.0,0.84377521276474
-How do I handle exceptions in Python?,You can handle exceptions in Python using the `try` and `except` statements. The `try` statement is ...,0.5,0.75,0.75,0.5,0.8225321173667908
-What is the finally clause in a try/except block?,I couldn't find this in the Python docs....,1.0,0.75,0.0,0.5,0.8494185209274292
-What does the sorted() built-in function do?,The `sorted()` built-in function returns a new sorted list from the items in the iterable. It has tw...,0.5,0.75,0.25,0.5,0.8869121074676514
-What does the map() function do in Python?,The `map()` function in Python applies a given function to every item of an iterable (such as a list...,0.25,0.75,0.0,0.75,0.8404855132102966
-What is a lambda function in Python?,A lambda function in Python is a small anonymous function that can be created with the `lambda` keyw...,0.25,0.75,1.0,0.5,0.8536922931671143
-How do I format a string using f-strings in Python?,You can format a string using f-strings in Python by prefixing the string with `f` or `F` and using ...,0.25,1.0,1.0,1.0,0.819854199886322
-How do I parse JSON in Python?,You can use the `json.load()` function to parse JSON in Python. This function takes a file-like obje...,0.5,0.75,0.25,0.5,0.8558904528617859
-How do I use regular expressions in Python?,You can use regular expressions in Python by importing the `re` module and using its functions to ma...,0.5,0.75,1.0,0.5,0.8296511769294739
-What does itertools.chain() do?,I couldn't find this in the Python docs....,0.0,0.75,0.5,0.5,0.8263294696807861
-How do I use collections.Counter?,You can use `collections.Counter` to count the occurrences of elements in an iterable or to initiali...,0.25,0.75,0.75,0.75,0.8312438726425171
-How do I open and read a file in Python?,You can open and read a file in Python using the built-in `open()` function. The default mode is 'r'...,0.25,0.75,0.5,0.5,0.8362804651260376
-How do I use pathlib to work with file paths?,You can use pathlib to work with file paths by importing the `Path` class and creating instances of ...,0.25,0.75,0.75,0.5,0.8301631808280945
-What is a class in Python and how do I define one?,A class in Python is a way to bundle data and functionality together. It's a new type of object that...,0.5,0.75,0.25,0.5,0.8250851035118103
-What is the purpose of the __init__ method in a class?,The purpose of the `__init__` method in a class is to initialize the newly created class instance. W...,0.5,0.75,0.75,0.5,0.8235388994216919
-How do I import a module in Python?,"You can import a module in Python using the `import` statement. For example:
-```python
-import math
-`...",0.5,0.75,0.5,0.75,0.8243008255958557
-What does functools.reduce() do?,"functools.reduce() applies a function of two arguments cumulatively to the items of an iterable, fro...",0.5,0.75,1.0,1.0,0.8880100250244141
+* **...",0.5,0.75,0.75,0.75,0.8183161616325378
+What is a dictionary in Python?,"A dictionary in Python is a data type that stores a collection of key-value pairs, where keys are un...",0.5,0.75,0.5,0.75,0.8573681116104126
+What is the difference between list.append() and list.extend()?,"List `append()` and `extend()` are both used to add elements to the end of a list, but they differ i...",0.25,0.75,0.75,0.75,0.8515942096710205
+How do I write a list comprehension in Python?,A list comprehension in Python is a concise way to create lists. It consists of brackets containing ...,1.0,0.75,1.0,1.0,0.8240664601325989
+How do I use a for loop in Python?,"## Using a for Loop in Python
+
+A for loop in Python is used to iterate over a sequence (such as a li...",0.5,0.75,0.75,0.75,0.8074422478675842
+How does the range() function work?,The `range()` function in Python generates a sequence of numbers starting from a specified start val...,0.0,0.75,0.0,0.5,0.8232796788215637
+What does the enumerate() function do?,The `enumerate()` function returns an enumerate object. It takes an iterable and an optional start v...,0.75,0.75,0.75,0.75,0.8177371621131897
+What does the zip() function do?,"The `zip()` function returns an iterator of tuples, where the i-th tuple contains the i-th element f...",0.25,0.75,0.75,0.75,0.855416476726532
+How do I handle exceptions in Python?,Handling exceptions in Python involves using the `try` and `except` statements. Here's a general out...,0.25,0.75,0.75,0.5,0.8098657727241516
+What is the finally clause in a try/except block?,The finally clause in a try/except block is used to execute a block of code regardless of whether an...,0.5,0.75,0.0,0.5,0.8373106718063354
+What does the sorted() built-in function do?,The `sorted()` built-in function returns a new sorted list from the items in the iterable. It has tw...,0.75,0.75,0.0,0.5,0.8869121074676514
+What does the map() function do in Python?,"The `map()` function applies a given function to each item of an iterable (such as a list, tuple, or...",0.25,1.0,0.0,0.25,0.8507591485977173
+What is a lambda function in Python?,A lambda function in Python is a small anonymous function that can be created with the `lambda` keyw...,0.25,0.75,1.0,0.5,0.8615838885307312
+How do I format a string using f-strings in Python?,You can format a string using f-strings in Python by prefixing the string with `f` or `F` and embedd...,0.25,0.75,1.0,1.0,0.8174222707748413
+How do I parse JSON in Python?,You can use the `json` module in Python to parse JSON data. The `json.load()` function can be used t...,0.25,0.75,0.25,0.5,0.8486165404319763
+How do I use regular expressions in Python?,You can use regular expressions in Python with the `re` module. This module provides regular express...,0.5,0.75,1.0,0.5,0.8057777881622314
+What does itertools.chain() do?,itertools.chain() makes an iterator that returns elements from the first iterable until it is exhaus...,0.25,0.75,0.25,0.5,0.8324829339981079
+How do I use collections.Counter?,You can use `collections.Counter` to count the occurrences of elements in an iterable or initialize ...,0.5,0.75,0.75,0.75,0.8019059300422668
+How do I open and read a file in Python?,"You can open and read a file in Python using the built-in `open()` function. Here's an example:
+
+```...",0.5,1.0,0.5,0.5,0.8204429745674133
+How do I use pathlib to work with file paths?,"You can use the `Path` class from the `pathlib` module to work with file paths. Here's an example:
+
+...",0.5,1.0,0.75,0.5,0.8143039345741272
+What is a class in Python and how do I define one?,A class in Python is a way to bundle data and functionality together. It's a way to create a new typ...,0.5,0.75,0.25,0.5,0.8268923759460449
+What is the purpose of the __init__ method in a class?,The purpose of the `__init__` method in a class is to initialize the attributes of a class instance ...,0.5,0.75,0.75,0.5,0.884531557559967
+How do I import a module in Python?,"You can import a module in Python using the `import` statement. Here are a few ways to do it:
+
+```py...",0.5,0.75,0.5,0.75,0.8228594064712524
+What does functools.reduce() do?,"functools.reduce() applies a function of two arguments cumulatively to the items of an iterable, fro...",0.75,0.75,1.0,1.0,0.8987191319465637

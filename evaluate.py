@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import time
 import pandas as pd
 from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
@@ -183,6 +184,10 @@ def run_evaluation():
         question = tc["question"]
         ground_truth = tc["ground_truth"]
         print(f"  [{i+1}/{len(TEST_CASES)}] {question}")
+
+        if i > 0:
+            print("    ⏳ Waiting 40s (Groq rate limit)...")
+            time.sleep(40)
 
         result = chain.invoke({"question": question, "chat_history": []})
         answer = result["answer"]
