@@ -1,36 +1,36 @@
 question,answer,faithfulness,answer_relevancy,context_precision,context_recall,bertscore_f1
-How do I create a list in Python?,You can create a list in Python by enclosing a sequence of values in square brackets `[]`. Here are ...,0.25,1.0,0.5,1.0,0.8543079495429993
+How do I create a list in Python?,You can create a list in Python using square brackets `[]` and separating elements with commas. For ...,0.25,1.0,0.5,1.0,0.8701903223991394
 What is the difference between a list and a tuple?,"A list and a tuple are both sequence data types in Python, but they have some key differences:
 
-* **...",0.5,0.75,0.75,0.75,0.8183161616325378
-What is a dictionary in Python?,"A dictionary in Python is a data type that stores a collection of key-value pairs, where keys are un...",0.5,0.75,0.5,0.75,0.8573681116104126
-What is the difference between list.append() and list.extend()?,"List `append()` and `extend()` are both used to add elements to the end of a list, but they differ i...",0.25,0.75,0.75,0.75,0.8515942096710205
-How do I write a list comprehension in Python?,A list comprehension in Python is a concise way to create lists. It consists of brackets containing ...,1.0,0.75,1.0,1.0,0.8240664601325989
+* **...",0.5,0.75,0.75,0.75,0.8159092664718628
+What is a dictionary in Python?,"A dictionary in Python is a data type that stores a collection of key-value pairs, where each key is...",0.5,0.75,0.5,0.75,0.8597252368927002
+What is the difference between list.append() and list.extend()?,The main difference between `list.append()` and `list.extend()` is that `append()` adds a single ite...,0.5,0.75,1.0,1.0,0.8670836687088013
+How do I write a list comprehension in Python?,A list comprehension in Python consists of brackets containing an expression followed by a for claus...,1.0,0.75,1.0,1.0,0.8296523690223694
 How do I use a for loop in Python?,"## Using a for Loop in Python
 
-A for loop in Python is used to iterate over a sequence (such as a li...",0.5,0.75,0.75,0.75,0.8074422478675842
-How does the range() function work?,The `range()` function in Python generates a sequence of numbers starting from a specified start val...,0.0,0.75,0.0,0.5,0.8232796788215637
-What does the enumerate() function do?,The `enumerate()` function returns an enumerate object. It takes an iterable and an optional start v...,0.75,0.75,0.75,0.75,0.8177371621131897
-What does the zip() function do?,"The `zip()` function returns an iterator of tuples, where the i-th tuple contains the i-th element f...",0.25,0.75,0.75,0.75,0.855416476726532
-How do I handle exceptions in Python?,Handling exceptions in Python involves using the `try` and `except` statements. Here's a general out...,0.25,0.75,0.75,0.5,0.8098657727241516
-What is the finally clause in a try/except block?,The finally clause in a try/except block is used to execute a block of code regardless of whether an...,0.5,0.75,0.0,0.5,0.8373106718063354
-What does the sorted() built-in function do?,The `sorted()` built-in function returns a new sorted list from the items in the iterable. It has tw...,0.75,0.75,0.0,0.5,0.8869121074676514
-What does the map() function do in Python?,"The `map()` function applies a given function to each item of an iterable (such as a list, tuple, or...",0.25,1.0,0.0,0.25,0.8507591485977173
-What is a lambda function in Python?,A lambda function in Python is a small anonymous function that can be created with the `lambda` keyw...,0.25,0.75,1.0,0.5,0.8615838885307312
-How do I format a string using f-strings in Python?,You can format a string using f-strings in Python by prefixing the string with `f` or `F` and embedd...,0.25,0.75,1.0,1.0,0.8174222707748413
-How do I parse JSON in Python?,You can use the `json` module in Python to parse JSON data. The `json.load()` function can be used t...,0.25,0.75,0.25,0.5,0.8486165404319763
-How do I use regular expressions in Python?,You can use regular expressions in Python with the `re` module. This module provides regular express...,0.5,0.75,1.0,0.5,0.8057777881622314
-What does itertools.chain() do?,itertools.chain() makes an iterator that returns elements from the first iterable until it is exhaus...,0.25,0.75,0.25,0.5,0.8324829339981079
-How do I use collections.Counter?,You can use `collections.Counter` to count the occurrences of elements in an iterable or initialize ...,0.5,0.75,0.75,0.75,0.8019059300422668
-How do I open and read a file in Python?,"You can open and read a file in Python using the built-in `open()` function. Here's an example:
+A for loop in Python is used to iterate over a sequence (such as a li...",0.75,0.75,1.0,1.0,0.8091868162155151
+How does the range() function work?,"The `range()` function in Python generates a sequence of numbers starting from the first argument, s...",0.75,0.75,0.25,0.5,0.8375517725944519
+What does the enumerate() function do?,The `enumerate()` function returns an enumerate object. It takes an iterable and an optional start v...,0.75,0.75,0.75,0.75,0.8262715935707092
+What does the zip() function do?,"The `zip()` function returns an iterator of tuples, where the i-th tuple contains the i-th element f...",1.0,0.75,1.0,1.0,0.8721904158592224
+How do I handle exceptions in Python?,Handling exceptions in Python involves using the `try` and `except` blocks. The `try` block contains...,0.25,0.75,1.0,1.0,0.7963960766792297
+What is the finally clause in a try/except block?,The finally clause in a try/except block is used to execute a block of code regardless of whether an...,0.5,0.75,0.0,0.5,0.8429015874862671
+What does the sorted() built-in function do?,The `sorted()` built-in function returns a new sorted list from the items in the iterable. It has tw...,0.5,0.75,0.0,0.5,0.8844146728515625
+What does the map() function do in Python?,The `map()` function in Python applies a given function to every item of an iterable (such as a list...,0.25,1.0,0.0,0.5,0.8388373255729675
+What is a lambda function in Python?,A lambda function in Python is a small anonymous function that can be created with the `lambda` keyw...,0.25,0.75,1.0,0.5,0.8719983696937561
+How do I format a string using f-strings in Python?,"To format a string using f-strings in Python, you prefix the string with `f` or `F` and use curly br...",0.25,0.75,1.0,1.0,0.8150257468223572
+How do I parse JSON in Python?,"You can use the `json` module in Python to parse JSON data. Here are a few ways to do it:
 
-```...",0.5,1.0,0.5,0.5,0.8204429745674133
+1. **Usin...",0.25,0.75,0.0,0.5,0.814712405204773
+How do I use regular expressions in Python?,Regular expressions in Python can be used through the `re` module. You can use functions like `re.ma...,0.25,0.75,0.75,0.5,0.8491161465644836
+What does itertools.chain() do?,itertools.chain() makes an iterator that returns elements from the first iterable until it is exhaus...,0.25,0.75,0.5,0.25,0.8779290318489075
+How do I use collections.Counter?,You can use `collections.Counter` to count the occurrences of elements in an iterable or to initiali...,0.5,0.75,0.75,0.75,0.7987196445465088
+How do I open and read a file in Python?,You can open and read a file in Python using the built-in `open()` function or the `Path.open()` met...,0.25,0.75,0.5,0.5,0.8148414492607117
 How do I use pathlib to work with file paths?,"You can use the `Path` class from the `pathlib` module to work with file paths. Here's an example:
 
-...",0.5,1.0,0.75,0.5,0.8143039345741272
-What is a class in Python and how do I define one?,A class in Python is a way to bundle data and functionality together. It's a way to create a new typ...,0.5,0.75,0.25,0.5,0.8268923759460449
-What is the purpose of the __init__ method in a class?,The purpose of the `__init__` method in a class is to initialize the attributes of a class instance ...,0.5,0.75,0.75,0.5,0.884531557559967
+...",0.5,1.0,0.75,0.5,0.8057785034179688
+What is a class in Python and how do I define one?,A class in Python is a way to bundle data and functionality together. It creates a new type of objec...,0.5,0.75,0.25,0.5,0.83456951379776
+What is the purpose of the __init__ method in a class?,The purpose of the `__init__` method in a class is to initialize the attributes of the class instanc...,0.5,1.0,0.75,0.5,0.8886789083480835
 How do I import a module in Python?,"You can import a module in Python using the `import` statement. Here are a few ways to do it:
 
-```py...",0.5,0.75,0.5,0.75,0.8228594064712524
-What does functools.reduce() do?,"functools.reduce() applies a function of two arguments cumulatively to the items of an iterable, fro...",0.75,0.75,1.0,1.0,0.8987191319465637
+```py...",0.25,0.75,0.0,0.75,0.8327834606170654
+What does functools.reduce() do?,"functools.reduce() applies a function cumulatively to the items of an iterable, from left to right, ...",0.75,0.75,1.0,1.0,0.8938160538673401

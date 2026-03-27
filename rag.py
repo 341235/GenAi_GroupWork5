@@ -120,19 +120,19 @@ def _build_ensemble_reranker(vectorstore, all_docs, cross_encoder,
     semantic_retriever = vectorstore.as_retriever(
         search_type="mmr",
         search_kwargs={
-            "k": 6, "fetch_k": 12,
+            "k": 10, "fetch_k": 20,
             **({"filter": chroma_filter} if chroma_filter else {}),
         },
     )
 
     bm25_docs = [d for d in all_docs if doc_filter_fn(d)] if doc_filter_fn else all_docs
-    bm25_retriever = _load_or_build_bm25(bm25_docs, k=6)
+    bm25_retriever = _load_or_build_bm25(bm25_docs, k=10)
 
     ensemble = EnsembleRetriever(
         retrievers=[bm25_retriever, semantic_retriever],
         weights=[0.2, 0.8],
     )
-    reranker = CrossEncoderReranker(model=cross_encoder, top_n=5)
+    reranker = CrossEncoderReranker(model=cross_encoder, top_n=8)
     return ContextualCompressionRetriever(
         base_compressor=reranker,
         base_retriever=ensemble,
