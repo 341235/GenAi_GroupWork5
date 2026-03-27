@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 st.title("🐍 Python Documentation Assistant")
-st.caption("Ask questions about Python, NumPy, Pandas, Matplotlib, scikit-learn and more — powered by Ollama and ChromaDB.")
+st.caption("Ask questions about Python, NumPy, Pandas, Matplotlib, scikit-learn and more — powered by Groq and ChromaDB.")
 
 @st.cache_resource
 def get_chain():
