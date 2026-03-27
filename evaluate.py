@@ -1,8 +1,8 @@
 import re
-import sys
+import time
 import pandas as pd
 from dotenv import load_dotenv
-from langchain_groq import ChatGroq
+from langchain_ollama import ChatOllama
 from bert_score import score as bert_score_fn
 from rouge_score import rouge_scorer as rouge_scorer_lib
 
@@ -119,9 +119,30 @@ TEST_CASES = [
     },
 ]
 
-GROQ_JUDGE_MODEL = "llama-3.1-8b-instant"
-judge = ChatGroq(model=GROQ_JUDGE_MODEL, temperature=0)
+judge = ChatOllama(model="llama3.2", temperature=0, timeout=120)
 _rouge = rouge_scorer_lib.RougeScorer(["rougeL"], use_stemmer=True)
+
+
+def _wait_from_error(msg: str, default: float = 65.0) -> float:
+    """Parse 'try again in X.XXs' from a Groq rate-limit error message."""
+    m = re.search(r'try again in (\d+\.?\d*)s', str(msg))
+    return float(m.group(1)) + 2 if m else default
+
+
+def _groq_invoke_with_retry(fn, *args, max_retries: int = 8, **kwargs):
+    """Call fn(*args, **kwargs), retrying automatically on Groq 429 errors."""
+    for attempt in range(max_retries):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            msg = str(e)
+            if "rate_limit_exceeded" in msg or "429" in msg:
+                wait = _wait_from_error(msg)
+                print(f"    ⏳ Rate limit — waiting {wait:.0f}s (attempt {attempt+1}/{max_retries})...")
+                time.sleep(wait)
+            else:
+                raise
+    raise RuntimeError("Groq rate limit: max retries exceeded")
 
 
 # ---------------------------------------------------------------------------
@@ -205,21 +226,9 @@ def eval_rouge_l(answer: str, ground_truth: str) -> float:
 # Evaluation runner
 # ---------------------------------------------------------------------------
 
-def run_evaluation(pipeline_name: str) -> pd.DataFrame:
-    """
-    Run the full test suite against one pipeline.
-
-    pipeline_name: "baseline"   → rag_baseline.py  (parent-doc naive RAG)
-                   "advanced"   → rag.py            (hybrid + reranking + routing)
-                   "pageindex"  → rag_pageindex.py  (vectorless LLM tree navigation)
-    """
-    if pipeline_name == "baseline":
-        from rag_baseline import build_qa_chain
-    elif pipeline_name == "pageindex":
-        from rag_pageindex import build_qa_chain
-    else:
-        from rag import build_qa_chain
-        pipeline_name = "advanced"
+def run_evaluation(pipeline_name: str = "pageindex") -> pd.DataFrame:
+    """Run the full test suite against the PageIndex pipeline."""
+    from rag_pageindex import build_qa_chain
 
     print(f"\n{'='*60}")
     print(f"🔧 Loading pipeline: {pipeline_name.upper()}")
@@ -234,7 +243,7 @@ def run_evaluation(pipeline_name: str) -> pd.DataFrame:
         ground_truth = tc["ground_truth"]
         print(f"  [{i+1}/{len(TEST_CASES)}] {question}")
 
-        result  = chain.invoke({"question": question, "chat_history": []})
+        result  = _groq_invoke_with_retry(chain.invoke, {"question": question, "chat_history": []})
         answer  = result["answer"]
         docs    = result["source_docs"]
         context = "\n\n".join(doc.page_content for doc in docs)
@@ -325,22 +334,4 @@ def print_comparison(dfs: list[pd.DataFrame]) -> None:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    run_all      = "--all"       in sys.argv
-    run_baseline = "--baseline"  in sys.argv
-    run_advanced = "--advanced"  in sys.argv
-    run_pageindex = "--pageindex" in sys.argv
-
-    # Default to advanced if no flag given
-    if not any([run_all, run_baseline, run_advanced, run_pageindex]):
-        run_advanced = True
-
-    dfs = []
-    if run_all or run_baseline:
-        dfs.append(run_evaluation("baseline"))
-    if run_all or run_advanced:
-        dfs.append(run_evaluation("advanced"))
-    if run_all or run_pageindex:
-        dfs.append(run_evaluation("pageindex"))
-
-    if len(dfs) > 1:
-        print_comparison(dfs)
+    run_evaluation("pageindex")

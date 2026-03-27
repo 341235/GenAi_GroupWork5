@@ -1,0 +1,53 @@
+pipeline,question,answer,faithfulness,answer_relevancy,context_precision,context_recall,bertscore_f1,rouge_l
+pageindex,How do I create a list in Python?,"### Creating a List in Python
+
+You can create a list in Python by enclosing a sequence of values in square brackets `[]`...",0.5,0.75,0.75,0.75,0.8547988533973694,0.21621621621621623
+pageindex,What is the difference between a list and a tuple?,"A list and a tuple are both sequence types in Python, but they have some key differences:
+
+1. **Immutability**: Tuples a...",0.5,0.75,1.0,0.75,0.814435601234436,0.08888888888888888
+pageindex,What is a dictionary in Python?,A dictionary in Python is a mutable data type that stores mappings of unique keys to values. It is an unordered collecti...,0.25,0.75,0.0,0.25,0.8655502200126648,0.35294117647058826
+pageindex,What is the difference between list.append() and list.extend()?,"list.append(x) adds an item to the end of the list, while list.extend(iterable) adds all the items from the iterable to ...",0.5,0.75,1.0,0.75,0.9284979104995728,0.5833333333333334
+pageindex,How do I write a list comprehension in Python?,"```python
+# List comprehension
+numbers = [x**2 for x in range(10)]
+print(numbers)
+```...",0.25,0.75,0.0,0.75,0.8075391054153442,0.25
+pageindex,How do I use a for loop in Python?,You can use a for loop in Python to iterate over the items of any sequence (such as a list or a string). Here's an examp...,0.25,1.0,0.5,0.5,0.7959559559822083,0.01635687732342007
+pageindex,How does the range() function work?,"Rather than being a function, range is actually an immutable sequence type, as documented in Ranges and Sequence Types —...",0.75,0.75,1.0,0.5,0.8491826057434082,0.15384615384615383
+pageindex,What does the enumerate() function do?,"Return an enumerate object. iterable must be a sequence, an iterator, or some other object which supports iteration. The...",0.25,0.75,1.0,0.5,0.8280953764915466,0.13793103448275862
+pageindex,What does the zip() function do?,"The `zip()` function iterates over several iterables in parallel, producing tuples with an item from each one. It return...",0.5,0.75,1.0,1.0,0.8806993961334229,0.18867924528301885
+pageindex,How do I handle exceptions in Python?,"You can handle exceptions in Python using the `try`/`except` block. The basic syntax is as follows:
+
+```python
+try:
+    ...",0.75,1.0,0.75,0.5,0.796220064163208,0.016835016835016835
+pageindex,What is the finally clause in a try/except block?,The finally clause in a try/except block is an optional clause that defines clean-up actions that must be executed under...,0.25,1.0,0.0,1.0,0.8565527200698853,0.19819819819819817
+pageindex,What does the sorted() built-in function do?,Return a new sorted list from the items in iterable....,0.5,0.75,1.0,0.5,0.9070764183998108,0.5714285714285714
+pageindex,What does the map() function do in Python?,"```python
+def map(function, iterable, /, *iterables, strict=False):
+    """"""
+    Return an iterator that applies function...",0.75,0.75,1.0,0.5,0.8369922637939453,0.18823529411764706
+pageindex,What is a lambda function in Python?,I couldn't find this in the Python docs....,0.75,0.75,1.0,0.5,0.8274613618850708,0.07142857142857142
+pageindex,How do I format a string using f-strings in Python?,You can format a string using f-strings in Python by prefixing the string with `f` or `F` and writing expressions as `{e...,0.5,0.75,0.5,0.5,0.8340675234794617,0.16494845360824742
+pageindex,How do I parse JSON in Python?,You can parse JSON in Python using the `json.loads()` function. This function takes a JSON string as input and returns a...,0.25,0.75,0.0,1.0,0.8384561538696289,0.23287671232876714
+pageindex,How do I use regular expressions in Python?,"You can use regular expressions in Python with the `re` module. Here's an example of how to use it:
+
+```python
+import re...",0.5,0.75,0.75,0.5,0.8120554089546204,0.06147540983606557
+pageindex,What does itertools.chain() do?,"Make an iterator that returns elements from the first iterable until it is exhausted, then proceeds to the next iterable...",0.75,0.75,0.75,0.75,0.8589479327201843,0.12
+pageindex,How do I use collections.Counter?,"## Using collections.Counter
+
+You can use `collections.Counter` to count the occurrences of elements in an iterable or a...",0.5,0.75,0.75,0.25,0.7800685167312622,0.06376811594202898
+pageindex,How do I open and read a file in Python?,"### Opening and Reading a File in Python
+
+You can open and read a file in Python using the built-in `open()` function or...",0.5,0.75,0.0,1.0,0.7887165546417236,0.10989010989010989
+pageindex,How do I use pathlib to work with file paths?,"## Working with File Paths using Pathlib
+
+Pathlib is a powerful module in Python that provides an object-oriented way to...",0.5,0.75,1.0,0.75,0.81391441822052,0.06477732793522267
+pageindex,What is a class in Python and how do I define one?,"A class in Python is a way to bundle data and functionality together. It is a way to create a new type of object, allowi...",0.5,0.75,1.0,0.5,0.8330652117729187,0.15950920245398773
+pageindex,What is the purpose of the __init__ method in a class?,The purpose of the `__init__` method in a class is to create an instance of the class with an initial state. When a clas...,0.25,1.0,0.0,0.25,0.860741376876831,0.17582417582417584
+pageindex,How do I import a module in Python?,"You can import a module in Python using the `import` statement. Here are a few ways to do it:
+
+```python
+import module_n...",0.5,1.0,0.5,0.75,0.8268131613731384,0.12093023255813955
+pageindex,What does functools.reduce() do?,"Apply function of two arguments cumulatively to the items of iterable, from left to right, so as to reduce the iterable ...",0.0,1.0,0.75,0.5,0.9012037515640259,0.6222222222222222

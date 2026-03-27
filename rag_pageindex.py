@@ -47,7 +47,7 @@ CHROMA_PATH      = "./chroma_python_docs"
 GROQ_MODEL       = "llama-3.1-8b-instant"
 OPENAI_NAV_MODEL = "gpt-4o-mini"   # navigation only — GPT-4o-mini matches PageIndex's LLM usage
 CACHE_PATH       = ".pageindex_cache.json"
-TOP_PAGES        = 3                # pages returned per query
+TOP_PAGES        = 1                # single most relevant page selected by LLM reasoning
 
 
 # ---------------------------------------------------------------------------
@@ -118,11 +118,18 @@ def _navigate(question: str, index: dict, client: OpenAI) -> list[str]:
         for i, (url, summary) in enumerate(index.items())
     )
     prompt = (
-        f"You are a document navigator. Given the page index below, identify the "
-        f"{TOP_PAGES} pages most likely to contain the answer to this Python question.\n\n"
+        f"You are a precise document navigator for Python documentation.\n"
+        f"Given the page index below, select the {TOP_PAGES} pages most likely to "
+        f"contain a direct, complete answer to the question.\n\n"
+        f"Rules:\n"
+        f"- Prefer the most specific page over a general one "
+        f"(e.g. 'itertools.html' over 'tutorial/index.html' for an itertools question).\n"
+        f"- If the question mentions a specific function or module, prioritise the page "
+        f"dedicated to that module.\n"
+        f"- Only select a second page if the question clearly spans two topics.\n\n"
         f"Page Index:\n{entries}\n\n"
         f"Question: {question}\n\n"
-        f"Reply with only the page numbers, comma-separated (e.g. '3, 7, 12')."
+        f"Reply with only the page numbers, comma-separated (e.g. '3, 7')."
     )
     try:
         resp = client.chat.completions.create(
@@ -180,9 +187,12 @@ def build_qa_chain():
 
     prompt = ChatPromptTemplate.from_template(
         "You are a Python documentation assistant. "
-        "Answer the question using only the information in the context below. "
+        "Answer the question using ONLY the information in the context below. "
+        "Do not use any knowledge outside of the provided context. "
+        "Do not cite or reference the context — just answer directly. "
         "If the answer is not in the context, say: "
         "\"I couldn't find this in the Python docs.\"\n\n"
+        "Use Markdown. Wrap code in ```python blocks.\n\n"
         "Context:\n{context}\n\n"
         "Question: {question}\n\n"
         "Answer:"
